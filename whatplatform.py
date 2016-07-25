@@ -209,7 +209,7 @@ def get_platform_by_blind(website):
 
 					_debug('status=%s, length=%s' % (status,content_length), 3)
 
-					p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / min(content_404_length,content_length)
+					p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
 					_debug('ratio is %s%%'%p, 3)
 					if p > 5:
 						_debug('return %s'%platform, 3)
