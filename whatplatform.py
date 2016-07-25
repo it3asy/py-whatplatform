@@ -150,33 +150,6 @@ def get_platform_by_headers(headers):
 	_debug('return  []',2)
 	return []
 
-	# if hd.has_key('Server'):
-	# 	if 'Apache-Coyote' in hd['Server']:
-	# 		return ['java']
-	# 	if 'PHP/' in hd['Server']:
-	# 		return ['php']
-
-	# if hd.has_key('Set-Cookie'):
-	# 	if 'JSESSIONID' in hd['Set-Cookie']:
-	# 		return ['java']
-	# 	if 'ASP.NET_SessionId' in hd['Set-Cookie']:
-	# 		return ['asp.net']
-	# 	if 'ASPSESSIONID' in hd['Set-Cookie']:
-	# 		return ['asp']
-	# 	if 'PHPSESSIONID' in hd['Set-Cookie']:
-	# 		return ['php']
-
-	# if hd.has_key('X-Powered-By'):
-	# 	if 'JBoss' in hd['X-Powered-By']:
-	# 		return ['java']
-	# 	if 'JSP/' in hd['X-Powered-By']:
-	# 		return ['java']
-	# 	if 'Servlet' in hd['X-Powered-By']:
-	# 		return ['java']
-	# 	if 'PHP/' in hd['X-Powered-By']:
-	# 		return ['php']
-
-	# return []
 
 def get_platform_by_index(url, headers, content):
 	baseurl = url
