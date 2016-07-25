@@ -7,10 +7,14 @@ platform指网站的开发语言类型，whtatplatform是用来快速识别网�
 
 ### 通过网站动态页面后缀与开发语言对应关系识别:
 网站动态页面后缀与platform关系定义
-- asp: .asp,
-- asp.net: .aspx, .asmx, .ashx, .axd,
-- php: .php,
-- java: .jspx, .jsp, .do, .action,
+* asp: 
+  - .asp
+* asp.net:
+  - .aspx .asmx .ashx .axd
+* php: 
+  - .php
+* java: 
+  - .jspx .jsp .do .action
 
 ### 通过HTTP-HEADER特定字段内容识别:
 通过Server、Set-Cookie、X-Powered-By这3个字段中的特定关键字来识别网站开发语言,其规则定义:
