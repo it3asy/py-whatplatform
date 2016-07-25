@@ -42,7 +42,7 @@ platform指网站的开发语言类型，whtatplatform是用来快速识别网�
 
 # confuse me
 =================
-1) HTTP-HEADER判断platform的一个问题：是不是同一个网站所有页面的HTTP-HEADER中的那几个识别字段是一致的呢？
+1) HTTP-HEADER判断platform的一个问题：是不是同一个网站所有页面的HTTP-HEADER中的Server/Set-Cookie/X-Powered-By字段是一致的呢？
 
 2) Server和X-Powered-By中存在"PHP/"能否判断为php？
 * 理论上引起误差主要有:
