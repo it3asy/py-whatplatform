@@ -84,7 +84,11 @@ def get_charset(html, headers=[]):
 	if dict(headers).has_key('Content-Type'):
 		match = re.search('charset[\s]*?=[\s]*?[\'"]?([a-z0-9\-]+)[\'"]?', headers['Content-Type'], re.IGNORECASE)
 		if match:
-			return match.group(1).upper()
+			codec = match.group(1).upper()
+			if codec in ['UTF-8','GBK','GB2312','GB18030','BIG5']:
+				return codec
+			if codec.startswith('GB'):
+				return 'GB18030'
 	match = re.search('<meta\s[\s\S]*?charset[\s]*?=[\s]*?[\'"]?([a-z0-9\-]+)[\'"]?[\s\S]*?>', html, re.IGNORECASE)
 	if match:
 		codec = match.group(1).upper()
@@ -201,7 +205,6 @@ def get_platform_by_blind(website):
 					continue
 				status = resp.status_code
 
-	
 				if status_404 == 404:
 					if status in [200,500]:
 						_debug('status=%s'%status, 3)
@@ -213,11 +216,12 @@ def get_platform_by_blind(website):
 
 					_debug('status=%s, length=%s' % (status,content_length), 3)
 
-					p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
-					_debug('ratio is %s%%'%p, 3)
-					if p > 5:
-						_debug('return %s'%platform, 3)
-						return [platform]
+					if not content == content_404:
+						p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
+						_debug('ratio is %s%%'%p, 3)
+						if p > 5:
+							_debug('return %s'%platform, 3)
+							return [platform]
 			_debug('not matched', 2)
 	_debug('return  []',2)
 	return []
