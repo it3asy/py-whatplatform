@@ -170,9 +170,21 @@ def get_platform_by_index(url, headers, content):
 	return platform
 
 
-def get_platform_by_blind(website):
+def get_base_weburl(weburl):
+	_new_weburl = weburl.strip('/')
+	_urlObj = urlparse.urlparse(_new_weburl)
+	if _urlObj.path == '':
+		return _new_weburl
+	_pathArray = _urlObj.path.split('/')
+	_script = _pathArray[len(_pathArray)-1]
+	if '.' in _script:
+		_pathArray.remove(_script)
+	_urlPath = '/'.join(_pathArray)
+	_new_weburl = '%s://%s%s' % (_urlObj.scheme,_urlObj.netloc,_urlPath)
+	return _new_weburl
 
-	weburl = website
+def get_platform_by_blind(website):
+	baseurl = get_base_weburl(website)
 	url_404 = '/adcbf8c6f66dcf'
 	url_tries = ['/index','/default','/search']
 	for platform in platforms['exts'].keys():
@@ -181,7 +193,7 @@ def get_platform_by_blind(website):
 
 			_debug('trying .%s' % ext, 2)
 
-			url = weburl + url_404 + '.' + ext
+			url = baseurl + url_404 + '.' + ext
 
 			resp_404 = http_get(url)
 			if resp_404 == None:
@@ -195,7 +207,7 @@ def get_platform_by_blind(website):
 			_debug('404_status=%s, 404_length=%s'%(status_404,content_404_length), 3)
 
 			for url_try in url_tries:
-				url = weburl + url_try + '.' + ext
+				url = baseurl + url_try + '.' + ext
 
 				_debug('requesting  %s'%url, 3)
 
