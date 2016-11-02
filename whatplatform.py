@@ -183,8 +183,31 @@ def get_base_weburl(weburl):
 	_new_weburl = '%s://%s%s' % (_urlObj.scheme,_urlObj.netloc,_urlPath)
 	return _new_weburl
 
+
+def get_java_by_webinf(baseurl):
+	_urlObj = urlparse.urlparse(baseurl.strip('/'))
+	_pathArray = _urlObj.path.split('/')
+	_pathUps = []
+	for i in range(len(_pathArray)):
+		_pathUps.append('/..'*i)
+	for _pathUp in _pathUps:
+		_url = baseurl + _pathUp + '/WEB-INF'
+		try:
+			resp = requests.get(url=_url, timeout=30, verify=False, allow_redirects=False)
+			if resp.status_code in [302,301]:
+				if resp.headers['location'].endswith('/WEB-INF/'):
+					return True
+		except:
+			break
+	return
+
+
 def get_platform_by_blind(website):
 	baseurl = get_base_weburl(website)
+
+	if get_java_by_webinf(baseurl) == True:
+		return ['java']
+
 	url_404 = '/adcbf8c6f66dcf'
 	url_tries = ['/index','/default','/search']
 	for platform in platforms['exts'].keys():
