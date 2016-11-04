@@ -1,8 +1,9 @@
 # whatplatform 1.0
 =====================
 platform指网站的开发语言类型，whtatplatform是用来快速识别网站开发语言的工具,当前定义了java,asp,asp.net,php四种类型.
+07/2016
 
-## 两种识别platform的方式
+## 三种识别platform的方式
 ----------------------------------
 
 ### 通过网站动态页面后缀与开发语言对应关系识别:
@@ -15,6 +16,12 @@ platform指网站的开发语言类型，whtatplatform是用来快速识别网�
   - .php
 * java: 
   - .jspx .jsp .do .action
+
+### 通过特殊路径识别:
+* java:
+  - /WEB-INF
+* asp.net:
+  - 
 
 ### 通过HTTP-HEADER特定字段内容识别:
 通过Server、Set-Cookie、X-Powered-By这3个字段中的特定关键字来识别网站开发语言,其规则定义:

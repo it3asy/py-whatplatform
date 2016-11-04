@@ -170,44 +170,44 @@ def get_platform_by_index(url, headers, content):
 	return platform
 
 
-def get_base_weburl(weburl):
-	_new_weburl = weburl.strip('/')
+def get_baseurls(weburl):
+	_baseUrls = []
+	_basePathes = ['']
+	_new_weburl = weburl.strip()
 	_urlObj = urlparse.urlparse(_new_weburl)
-	if _urlObj.path == '':
-		return _new_weburl
-	_pathArray = _urlObj.path.split('/')
-	_script = _pathArray[len(_pathArray)-1]
-	if '.' in _script:
+	_urlPath = _urlObj.path
+	if _urlPath != '':
+		_pathArray = _urlPath.split('/')
+		_script = _pathArray[len(_pathArray)-1]
 		_pathArray.remove(_script)
-	_urlPath = '/'.join(_pathArray)
-	_new_weburl = '%s://%s%s' % (_urlObj.scheme,_urlObj.netloc,_urlPath)
-	return _new_weburl
+		_basePath = ''
+		for _path in _pathArray:
+			if _path != '':
+				_basePath = _basePath + '/' + _path
+				_basePathes.append(_basePath)
+	for _basePath in _basePathes:
+		_baseUrl = '%s://%s%s' % (_urlObj.scheme,_urlObj.netloc,_basePath)
+		_baseUrls.append(_baseUrl)
+	return _baseUrls
 
 
-def get_java_by_webinf(baseurl):
-	_urlObj = urlparse.urlparse(baseurl.strip('/'))
-	_pathArray = _urlObj.path.split('/')
-	_pathUps = []
-	for i in range(len(_pathArray)):
-		_pathUps.append('/..'*i)
-	for _pathUp in _pathUps:
-		_url = baseurl + _pathUp + '/WEB-INF'
+def get_platform_by_dir(website):
+	baseurls = get_baseurls(website)
+	for baseurl in baseurls:
+		_url = baseurl + '/WEB-INF'
 		try:
+			_debug('requesting  %s'%_url, 3)
 			resp = requests.get(url=_url, timeout=30, verify=False, allow_redirects=False)
 			if resp.status_code in [302,301]:
 				if resp.headers['location'].endswith('/WEB-INF/'):
-					return True
+					return ['java']
 		except:
 			break
-	return
+	return	[]
 
 
 def get_platform_by_blind(website):
-	baseurl = get_base_weburl(website)
-
-	if get_java_by_webinf(baseurl) == True:
-		return ['java']
-
+	baseurls = get_baseurls(website)
 	url_404 = '/adcbf8c6f66dcf'
 	url_tries = ['/index','/default','/search','/home']
 	for platform in platforms['exts'].keys():
@@ -216,47 +216,49 @@ def get_platform_by_blind(website):
 
 			_debug('trying .%s' % ext, 2)
 
-			url = baseurl + url_404 + '.' + ext
+			for baseurl in baseurls:
 
-			resp_404 = http_get(url)
-			if resp_404 == None:
-				_debug('bad request, break...', 3)
-				break
+				url = baseurl + url_404 + '.' + ext
 
-			content_404 = resp_404.content.decode(get_charset(resp_404.content, resp_404.headers),'ignore')
-			status_404 = resp_404.status_code
-			content_404_length = len(content_404)
+				resp_404 = http_get(url)
+				if resp_404 == None:
+					_debug('bad request, break...', 3)
+					break
 
-			_debug('404_status=%s, 404_length=%s'%(status_404,content_404_length), 3)
+				content_404 = resp_404.content.decode(get_charset(resp_404.content, resp_404.headers),'ignore')
+				status_404 = resp_404.status_code
+				content_404_length = len(content_404)
 
-			for url_try in url_tries:
-				url = baseurl + url_try + '.' + ext
+				_debug('404_status=%s, 404_length=%s'%(status_404,content_404_length), 3)
 
-				_debug('requesting  %s'%url, 3)
+				for url_try in url_tries:
+					url = baseurl + url_try + '.' + ext
 
-				resp = http_get(url)
-				if resp == None:
-					_debug('bad request, continue next', 3)
-					continue
-				status = resp.status_code
+					_debug('requesting  %s'%url, 3)
 
-				if status_404 == 404:
-					if status in [200,500]:
-						_debug('status=%s'%status, 3)
-						_debug('return %s'%platform, 3)
-						return [platform]
-				else:
-					content = resp.content.decode(get_charset(resp.content, resp.headers),'ignore')
-					content_length = len(content)
+					resp = http_get(url)
+					if resp == None:
+						_debug('bad request, continue next', 3)
+						continue
+					status = resp.status_code
 
-					_debug('status=%s, length=%s' % (status,content_length), 3)
-
-					if not content == content_404:
-						p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
-						_debug('ratio is %s%%'%p, 3)
-						if p > 5:
+					if status_404 == 404:
+						if status in [200,500]:
+							_debug('status=%s'%status, 3)
 							_debug('return %s'%platform, 3)
 							return [platform]
+					else:
+						content = resp.content.decode(get_charset(resp.content, resp.headers),'ignore')
+						content_length = len(content)
+
+						_debug('status=%s, length=%s' % (status,content_length), 3)
+
+						if not content == content_404:
+							p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
+							_debug('ratio is %s%%'%p, 3)
+							if p > 5:
+								_debug('return %s'%platform, 3)
+								return [platform]
 			_debug('not matched', 2)
 	_debug('return  []',2)
 	return []
@@ -265,7 +267,7 @@ def get_platform_by_blind(website):
 def whatplatform(target, debug_level=0):
 	global DEBUG_LEVEL
 	DEBUG_LEVEL = debug_level
-	result = {'index':[], 'header':[], 'blind':[]}
+	result = {'index':[], 'header':[], 'blind':[], 'dir':[]}
 	weburl = target['website']
 
 	_debug('request %s'%weburl, 1)
@@ -290,6 +292,11 @@ def whatplatform(target, debug_level=0):
 		platform = get_platform_by_index(baseurl, headers, content)
 		result['index'] = platform
 
+	if target['dir']:
+		_debug('diring...', 1)
+		platform = get_platform_by_dir(baseurl)
+		result['dir'] = platform
+
 	if not len(result['header'])==1 and not len(result['index'])==1:
 		if target['blind']:
 			_debug('blinding...', 1)
@@ -303,6 +310,7 @@ if __name__=='__main__':
 	parser = optparse.OptionParser('usage: %prog [options] target.com')
 	parser.add_option("-?", action="help", help=optparse.SUPPRESS_HELP)
 	parser.add_option("--blind", dest="blind", action="store_true", help="with blind mode")
+	parser.add_option("--dir", dest="dir", action="store_true", help="with dir mode")
 	parser.add_option("-d", "--debug", dest="debug", action="append", type=int,help="show debug log level", metavar="level")
 	(options, args) = parser.parse_args()
 
@@ -310,13 +318,15 @@ if __name__=='__main__':
 		parser.print_help()
 		sys.exit(0)
 
-	target = {'website':args[0],'header':True, 'index': True, 'blind':False}
+	target = {'website':args[0],'header':True, 'index': True, 'dir':False, 'blind':False}
 
 	if options.debug:
 		DEBUG_LEVEL = options.debug[0]
 
 	if options.blind:
 		target['blind'] = True
+	if options.dir:
+		target['dir'] = True
 	
 	print whatplatform(target, DEBUG_LEVEL)
 
