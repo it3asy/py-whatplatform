@@ -209,7 +209,7 @@ def get_platform_by_blind(website):
 		return ['java']
 
 	url_404 = '/adcbf8c6f66dcf'
-	url_tries = ['/index','/default','/search']
+	url_tries = ['/index','/default','/search','/home']
 	for platform in platforms['exts'].keys():
 		exts = platforms['exts'][platform]
 		for ext in exts:
