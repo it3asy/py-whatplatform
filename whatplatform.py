@@ -164,6 +164,7 @@ def get_platform_by_index(url, headers, content):
 	charset = get_charset(content, headers)
 	content = content.decode(charset, 'ignore')
 	links = LinksParser(baseurl,content).get_links_internal()
+	links.append(baseurl)
 	platform = get_platform_by_links(links)
 
 	_debug('return  %s'%platform,2)
