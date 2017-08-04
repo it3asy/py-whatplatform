@@ -27,6 +27,18 @@ def _debug(s,level):
 		x = 32+level
 		print '\033[0;%s;40m' % x + '  ' * (level-1) + '- %s' % s + '\033[0m'
 
+ext_orders = [
+	('php',1),
+	('asp',1),
+	('aspx',1),
+	('jsp',1),
+	('do',2),
+	('action',2),
+	('jspx',2),
+	('axd',3),
+	('asmx',3),
+	('ashx',3),
+]
 
 platforms = {
 		'exts':{
@@ -159,14 +171,25 @@ def get_platform_by_headers(headers):
 	return []
 
 
-def get_platform_by_index(url, headers, content):
+def get_platform_by_index(url, headers, content, follow_href=True):
 	baseurl = url
 	charset = get_charset(content, headers)
 	content = content.decode(charset, 'ignore')
 	links = LinksParser(baseurl,content).get_links_internal()
-	links.append(baseurl)
+	#links.append(baseurl)
 	platform = get_platform_by_links(links)
-
+	if platform == []:
+		if len(links) < 3 and follow_href:
+			for link in links:
+				resp = http_get(link)
+				if resp.content == None: break
+				content = resp.content
+				charset = get_charset(content, headers)
+				content = content.decode(charset, 'ignore')
+				links = LinksParser(link,content).get_links_internal()
+				platform = get_platform_by_links(links)
+				if platform != []:
+					break
 	_debug('return  %s'%platform,2)
 	return platform
 
@@ -211,56 +234,54 @@ def get_platform_by_blind(website):
 	baseurls = get_baseurls(website)
 	url_404 = '/adcbf8c6f66dcf'
 	url_tries = ['/index','/default','/search','/home']
-	for platform in platforms['exts'].keys():
-		exts = platforms['exts'][platform]
-		for ext in exts:
 
-			_debug('trying .%s' % ext, 2)
+	for ext,order in ext_orders:
+		if order >= 3: continue
+		platform = get_platform_by_exts([ext])[0]
 
-			for baseurl in baseurls:
+		_debug('trying .%s' % ext, 2)
 
-				url = baseurl + url_404 + '.' + ext
+		for baseurl in baseurls:
+			url = baseurl + url_404 + '.' + ext
+			resp_404 = http_get(url)
+			if resp_404 == None:
+				_debug('bad request, break...', 3)
+				break
+			content_404 = resp_404.content.decode(get_charset(resp_404.content, resp_404.headers),'ignore')
+			status_404 = resp_404.status_code
+			content_404_length = len(content_404)
 
-				resp_404 = http_get(url)
-				if resp_404 == None:
-					_debug('bad request, break...', 3)
-					break
+			_debug('404_status=%s, 404_length=%s'%(status_404,content_404_length), 3)
 
-				content_404 = resp_404.content.decode(get_charset(resp_404.content, resp_404.headers),'ignore')
-				status_404 = resp_404.status_code
-				content_404_length = len(content_404)
+			for url_try in url_tries:
+				url = baseurl + url_try + '.' + ext
 
-				_debug('404_status=%s, 404_length=%s'%(status_404,content_404_length), 3)
+				_debug('requesting  %s'%url, 3)
 
-				for url_try in url_tries:
-					url = baseurl + url_try + '.' + ext
+				resp = http_get(url)
+				if resp == None:
+					_debug('bad request, continue next', 3)
+					continue
+				status = resp.status_code
 
-					_debug('requesting  %s'%url, 3)
+				if status_404 == 404:
+					if status in [200,500]:
+						_debug('status=%s'%status, 3)
+						_debug('return %s'%platform, 3)
+						return [platform]
+				else:
+					content = resp.content.decode(get_charset(resp.content, resp.headers),'ignore')
+					content_length = len(content)
 
-					resp = http_get(url)
-					if resp == None:
-						_debug('bad request, continue next', 3)
-						continue
-					status = resp.status_code
+					_debug('status=%s, length=%s' % (status,content_length), 3)
 
-					if status_404 == 404:
-						if status in [200,500]:
-							_debug('status=%s'%status, 3)
+					if not content == content_404:
+						p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
+						_debug('ratio is %s%%'%p, 3)
+						if p > 5:
 							_debug('return %s'%platform, 3)
 							return [platform]
-					else:
-						content = resp.content.decode(get_charset(resp.content, resp.headers),'ignore')
-						content_length = len(content)
-
-						_debug('status=%s, length=%s' % (status,content_length), 3)
-
-						if not content == content_404:
-							p = (max(content_404_length,content_length) - min(content_404_length,content_length)) * 100 / max(content_404_length,content_length)
-							_debug('ratio is %s%%'%p, 3)
-							if p > 5:
-								_debug('return %s'%platform, 3)
-								return [platform]
-			_debug('not matched', 2)
+		_debug('not matched', 2)
 	_debug('return  []',2)
 	return []
 
@@ -290,7 +311,9 @@ def whatplatform(target, debug_level=0):
 
 	if target['index']:
 		_debug('indexing...', 1)
-		platform = get_platform_by_index(baseurl, headers, content)
+		platform = get_platform_by_links([baseurl])
+		if platform == []:
+			platform = get_platform_by_index(baseurl, headers, content)
 		result['index'] = platform
 
 	if target['dir']:
